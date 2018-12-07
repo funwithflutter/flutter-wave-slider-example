@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:wave_slider/wave_painter.dart';
 
 class WaveSlider extends StatefulWidget {
   final double sliderWidth;
   final double sliderHeight;
 
+  final Color color;
+
   WaveSlider({
     this.sliderWidth = 350.0,
     this.sliderHeight = 50.0,
+    this.color = Colors.black,
   });
 
   @override
@@ -53,15 +57,16 @@ class _WaveSliderState extends State<WaveSlider> {
   Widget build(BuildContext context) {
     return GestureDetector(
       child: Container(
-          width: widget.sliderWidth,
-          height: widget.sliderHeight,
-          color: Colors.red,
-          child: Column(
-            children: <Widget>[
-              Text(_dragPosition.toString()),
-              Text(_dragPercentage.toString()),
-            ],
-          )),
+        width: widget.sliderWidth,
+        height: widget.sliderHeight,
+        child: CustomPaint(
+          painter: WavePainter(
+            color: widget.color,
+            sliderPosition: _dragPosition,
+            dragPercentage: _dragPercentage,
+          ),
+        ),
+      ),
       onHorizontalDragStart: (DragStartDetails start) =>
           _onDragStart(context, start),
       onHorizontalDragUpdate: (DragUpdateDetails update) =>
