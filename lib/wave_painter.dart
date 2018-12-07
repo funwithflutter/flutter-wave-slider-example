@@ -24,8 +24,7 @@ class WavePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     _paintAnchors(canvas, size);
-    _paintLine(canvas, size);
-    _paintBlock(canvas, size);
+    _paintWaveLine(canvas, size);
   }
 
   _paintAnchors(Canvas canvas, Size size) {
@@ -40,10 +39,53 @@ class WavePainter extends CustomPainter {
     canvas.drawPath(path, wavePainter);
   }
 
-  _paintBlock(Canvas canvas, Size size) {
-    Rect sliderRect =
-        Offset(sliderPosition, size.height - 5.0) & Size(3.0, 10.0);
-    canvas.drawRect(sliderRect, fillPainter);
+  _paintWaveLine(Canvas canvas, Size size) {
+    // Wave-line definitions.
+    double bendWidth = 40.0;
+    double bezierWidth = 40.0;
+
+    double startOfBend = sliderPosition - bendWidth / 2;
+    double startOfBezier = startOfBend - bezierWidth;
+    double endOfBend = sliderPosition + bendWidth / 2;
+    double endOfBezier = endOfBend + bezierWidth;
+
+    double controlHeight = 0.0;
+    double centerPoint = sliderPosition;
+
+    double leftControlPoint1 = startOfBend;
+    double leftControlPoint2 = startOfBend;
+    double rightControlPoint1 = endOfBend;
+    double rightControlPoint2 = endOfBend;
+
+    double bendValue = 0.0;
+    bool moveLeft = false;
+
+    if (moveLeft) {
+      leftControlPoint1 = leftControlPoint1 + bendValue;
+      leftControlPoint2 = leftControlPoint2 + bendValue / 2;
+      rightControlPoint1 = rightControlPoint1 + bendValue;
+      rightControlPoint2 = rightControlPoint2 - bendValue;
+
+      centerPoint = centerPoint + bendValue;
+    } else {
+      leftControlPoint1 = leftControlPoint1 + bendValue;
+      leftControlPoint2 = leftControlPoint2 - bendValue;
+      rightControlPoint1 = rightControlPoint1 - bendValue / 2;
+      rightControlPoint2 = rightControlPoint2 - bendValue;
+
+      centerPoint = centerPoint - bendValue;
+    }
+
+    Path path = Path();
+    path.moveTo(0.0, size.height);
+    path.lineTo(startOfBezier, size.height);
+    path.cubicTo(leftControlPoint1, size.height, leftControlPoint2,
+        controlHeight, centerPoint, controlHeight);
+    path.cubicTo(rightControlPoint1, controlHeight, rightControlPoint2,
+        size.height, endOfBezier, size.height);
+    path.lineTo(size.width, size.height);
+
+    canvas.drawPath(path, wavePainter);
   }
 
   @override
