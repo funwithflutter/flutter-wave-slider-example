@@ -1,10 +1,14 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:wave_slider/wave_slider.dart';
 
 class WavePainter extends CustomPainter {
   final double sliderPosition;
   final double dragPercentage;
+  final double animationProgress;
+
+  final SliderState sliderState;
 
   final Color color;
 
@@ -14,11 +18,13 @@ class WavePainter extends CustomPainter {
   /// Previous slider position initialised at 0.0
   double _previousSliderPosition = 0.0;
 
-  WavePainter(
-      {@required this.sliderPosition,
-      @required this.dragPercentage,
-      @required this.color})
-      : wavePainter = Paint()
+  WavePainter({
+    @required this.sliderPosition,
+    @required this.dragPercentage,
+    @required this.animationProgress,
+    @required this.sliderState,
+    @required this.color,
+  })  : wavePainter = Paint()
           ..color = color
           ..style = PaintingStyle.stroke
           ..strokeWidth = 2.5,
@@ -29,7 +35,24 @@ class WavePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     _paintAnchors(canvas, size);
-    _paintWaveLine(canvas, size);
+
+    switch (sliderState) {
+      case SliderState.starting:
+        _paintStartupWave(canvas, size);
+        break;
+      case SliderState.resting:
+        _paintRestingWave(canvas, size);
+        break;
+      case SliderState.sliding:
+        _paintSlidingWave(canvas, size);
+        break;
+      case SliderState.stopping:
+        _paintStoppingWave(canvas, size);
+        break;
+      default:
+        _paintSlidingWave(canvas, size);
+        break;
+    }
   }
 
   _paintAnchors(Canvas canvas, Size size) {
@@ -37,16 +60,41 @@ class WavePainter extends CustomPainter {
     canvas.drawCircle(Offset(size.width, size.height), 5.0, fillPainter);
   }
 
-  _paintLine(Canvas canvas, Size size) {
+  _paintRestingWave(Canvas canvas, Size size) {
     Path path = Path();
     path.moveTo(0.0, size.height);
     path.lineTo(size.width, size.height);
     canvas.drawPath(path, wavePainter);
   }
 
-  _paintWaveLine(Canvas canvas, Size size) {
-    WaveCurveDefinitions waveCurve = _calculateWaveLineDefinitions(size);
+  _paintStartupWave(Canvas canvas, Size size) {
+    WaveCurveDefinitions line = _calculateWaveLineDefinitions(size);
 
+    double waveHeight = lerpDouble(
+        size.height,
+        line.controlHeight,
+        Curves.elasticOut.transform(animationProgress));
+    line.controlHeight = waveHeight;
+    _paintWaveLine(canvas, size, line);
+  }
+
+  _paintSlidingWave(Canvas canvas, Size size) {
+    WaveCurveDefinitions line = _calculateWaveLineDefinitions(size);
+    _paintWaveLine(canvas, size, line);
+  }
+
+  _paintStoppingWave(Canvas canvas, Size size) {
+    WaveCurveDefinitions line = _calculateWaveLineDefinitions(size);
+
+    double waveHeight = lerpDouble(line.controlHeight,
+        size.height, Curves.elasticOut.transform(animationProgress));
+
+    line.controlHeight = waveHeight;
+
+    _paintWaveLine(canvas, size, line);
+  }
+
+  _paintWaveLine(Canvas canvas, Size size, WaveCurveDefinitions waveCurve) {
     Path path = Path();
     path.moveTo(0.0, size.height);
     path.lineTo(waveCurve.startOfBezier, size.height);
@@ -144,14 +192,14 @@ class WavePainter extends CustomPainter {
 }
 
 class WaveCurveDefinitions {
-  final double startOfBezier;
-  final double endOfBezier;
-  final double leftControlPoint1;
-  final double leftControlPoint2;
-  final double rightControlPoint1;
-  final double rightControlPoint2;
-  final double controlHeight;
-  final double centerPoint;
+  double startOfBezier;
+  double endOfBezier;
+  double leftControlPoint1;
+  double leftControlPoint2;
+  double rightControlPoint1;
+  double rightControlPoint2;
+  double controlHeight;
+  double centerPoint;
 
   WaveCurveDefinitions({
     @required this.startOfBezier,

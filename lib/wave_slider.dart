@@ -6,7 +6,7 @@ class WaveSlider extends StatefulWidget {
   final double sliderHeight;
 
   final Color color;
-
+  
   WaveSlider({
     this.sliderWidth = 350.0,
     this.sliderHeight = 50.0,
@@ -17,9 +17,24 @@ class WaveSlider extends StatefulWidget {
   _WaveSliderState createState() => _WaveSliderState();
 }
 
-class _WaveSliderState extends State<WaveSlider> {
+class _WaveSliderState extends State<WaveSlider> with SingleTickerProviderStateMixin {
   double _dragPosition = 0.0;
   double _dragPercentage = 0.0;
+
+  WaveSliderController _slideController;
+
+  @override
+  void initState() {
+    super.initState();
+    _slideController = WaveSliderController(vsync: this)
+      ..addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _slideController.dispose();
+  }
 
   void _updateDragPosition(Offset val) {
     double newDragPosition = 0.0;
@@ -40,16 +55,19 @@ class _WaveSliderState extends State<WaveSlider> {
   void _onDragStart(BuildContext context, DragStartDetails start) {
     RenderBox box = context.findRenderObject();
     Offset localOffset = box.globalToLocal(start.globalPosition);
+    _slideController.setStateToStart();
     _updateDragPosition(localOffset);
   }
 
   void _onDragUpdate(BuildContext context, DragUpdateDetails update) {
     RenderBox box = context.findRenderObject();
     Offset localOffset = box.globalToLocal(update.globalPosition);
+    _slideController.setStateToSliding();
     _updateDragPosition(localOffset);
   }
 
   void _onDragEnd(BuildContext context, DragEndDetails end) {
+    _slideController.setStateToStopping();
     setState(() {});
   }
 
@@ -64,6 +82,8 @@ class _WaveSliderState extends State<WaveSlider> {
             color: widget.color,
             sliderPosition: _dragPosition,
             dragPercentage: _dragPercentage,
+            sliderState: _slideController.state,
+            animationProgress: _slideController.progress,
           ),
         ),
       ),
@@ -74,4 +94,67 @@ class _WaveSliderState extends State<WaveSlider> {
       onHorizontalDragEnd: (DragEndDetails end) => _onDragEnd(context, end),
     );
   }
+}
+
+class WaveSliderController extends ChangeNotifier {
+  final AnimationController controller;
+  SliderState _state = SliderState.resting;
+
+  WaveSliderController({@required TickerProvider vsync})
+      : controller = AnimationController(vsync: vsync) {
+    controller
+      ..addListener(_onProgressUpdate)
+      ..addStatusListener(_onStatusUpdate);
+  }
+
+  void _onProgressUpdate() {
+    notifyListeners();
+  }
+
+  void _onStatusUpdate(AnimationStatus status) {
+    if (status == AnimationStatus.completed) {
+      _onTransitionCompleted();
+    }
+  }
+
+  void _onTransitionCompleted() {
+    if (_state == SliderState.stopping) {
+      setStateToResting();
+    }
+  }
+
+  double get progress => controller.value;
+
+  SliderState get state => _state;
+
+  void _startAnimation() {
+    controller.duration = Duration(milliseconds: 500);
+    controller.forward(from: 0.0);
+    notifyListeners();
+  }
+
+  void setStateToStart() {
+    _startAnimation();
+    _state = SliderState.starting;
+  }
+
+  void setStateToStopping() {
+    _startAnimation();
+    _state = SliderState.stopping;
+  }
+
+  void setStateToSliding() {
+    _state = SliderState.sliding;
+  }
+
+  void setStateToResting() {
+    _state = SliderState.resting;
+  }
+}
+
+enum SliderState {
+  starting,
+  resting,
+  sliding,
+  stopping,
 }
