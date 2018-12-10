@@ -4,20 +4,26 @@ import 'package:wave_slider/wave_painter.dart';
 class WaveSlider extends StatefulWidget {
   final double sliderWidth;
   final double sliderHeight;
-
   final Color color;
-  
+  final ValueChanged<double> onChanged;
+  final ValueChanged<double> onChangeStart;
+  final ValueChanged<double> onChangeEnd;
+
   WaveSlider({
     this.sliderWidth = 350.0,
     this.sliderHeight = 50.0,
     this.color = Colors.black,
-  });
+    this.onChangeEnd,
+    this.onChangeStart,
+    @required this.onChanged,
+  }) : assert(sliderHeight >= 50 && sliderHeight <= 600);
 
   @override
   _WaveSliderState createState() => _WaveSliderState();
 }
 
-class _WaveSliderState extends State<WaveSlider> with SingleTickerProviderStateMixin {
+class _WaveSliderState extends State<WaveSlider>
+    with SingleTickerProviderStateMixin {
   double _dragPosition = 0.0;
   double _dragPercentage = 0.0;
 
@@ -34,6 +40,21 @@ class _WaveSliderState extends State<WaveSlider> with SingleTickerProviderStateM
   void dispose() {
     super.dispose();
     _slideController.dispose();
+  }
+
+  _handleChanged(double val) {
+    assert(widget.onChanged != null);
+    widget.onChanged(val);
+  }
+
+  _handleChangeStart(double val) {
+    assert(widget.onChangeStart != null);
+    widget.onChangeStart(val);
+  }
+
+  _handleChangeEnd(double val) {
+    assert(widget.onChangeEnd != null);
+    widget.onChangeEnd(val);
   }
 
   void _updateDragPosition(Offset val) {
@@ -57,6 +78,7 @@ class _WaveSliderState extends State<WaveSlider> with SingleTickerProviderStateM
     Offset localOffset = box.globalToLocal(start.globalPosition);
     _slideController.setStateToStart();
     _updateDragPosition(localOffset);
+    _handleChangeStart(_dragPercentage);
   }
 
   void _onDragUpdate(BuildContext context, DragUpdateDetails update) {
@@ -64,11 +86,14 @@ class _WaveSliderState extends State<WaveSlider> with SingleTickerProviderStateM
     Offset localOffset = box.globalToLocal(update.globalPosition);
     _slideController.setStateToSliding();
     _updateDragPosition(localOffset);
+    _handleChanged(_dragPercentage);
+    print(_dragPercentage);
   }
 
   void _onDragEnd(BuildContext context, DragEndDetails end) {
     _slideController.setStateToStopping();
     setState(() {});
+    _handleChangeEnd(_dragPercentage);
   }
 
   @override

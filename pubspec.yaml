@@ -35,6 +35,13 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+  fonts:
+    - family: Exo
+      fonts:
+        - asset: fonts/Exo-Regular.ttf
+    - family: TextMeOne
+      fonts:
+        - asset: fonts/TextMeOne-Regular.ttf
 
   # To add assets to your application, add an assets section, like this:
   # assets:
